@@ -5,6 +5,7 @@ import Register from './pages/Register'
 import Dashboard from './pages/Dashboard'
 import Projects from './pages/Projects'
 import ProjectDetail from './pages/ProjectDetail'
+import GitHubSetupComplete from './pages/GitHubSetupComplete'
 import ProtectedRoute from './components/ProtectedRoute'
 
 function App() {
@@ -12,6 +13,7 @@ function App() {
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+      <Route path="/github/setup-complete" element={<GitHubSetupComplete />} />
       <Route
         path="/"
         element={
