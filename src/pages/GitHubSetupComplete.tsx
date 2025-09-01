@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { CheckCircle, ExternalLink, ArrowRight } from 'lucide-react'
 
 export default function GitHubSetupComplete() {
   const [searchParams] = useSearchParams()
@@ -8,7 +7,6 @@ export default function GitHubSetupComplete() {
   const [countdown, setCountdown] = useState(5)
 
   const installationId = searchParams.get('installation_id')
-  const setupAction = searchParams.get('setup_action')
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -35,7 +33,9 @@ export default function GitHubSetupComplete() {
         <div className="card text-center">
           {/* Success Icon */}
           <div className="flex justify-center mb-6">
-            <CheckCircle className="w-16 h-16 text-green-500" />
+            <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center">
+              <span className="text-white text-2xl">✓</span>
+            </div>
           </div>
 
           {/* Title */}
@@ -59,15 +59,15 @@ export default function GitHubSetupComplete() {
               <h3 className="text-sm font-medium text-white mb-2">이제 다음을 할 수 있습니다:</h3>
               <ul className="space-y-2 text-sm text-gray-300">
                 <li className="flex items-center">
-                  <ArrowRight className="w-4 h-4 mr-2 text-primary-500" />
+                  <span className="w-4 h-4 mr-2 text-primary-500">→</span>
                   저장소 선택하여 애플리케이션 배포
                 </li>
                 <li className="flex items-center">
-                  <ArrowRight className="w-4 h-4 mr-2 text-primary-500" />
+                  <span className="w-4 h-4 mr-2 text-primary-500">→</span>
                   GitHub Actions 자동 트리거
                 </li>
                 <li className="flex items-center">
-                  <ArrowRight className="w-4 h-4 mr-2 text-primary-500" />
+                  <span className="w-4 h-4 mr-2 text-primary-500">→</span>
                   실시간 배포 상태 확인
                 </li>
               </ul>
@@ -95,7 +95,7 @@ export default function GitHubSetupComplete() {
                 className="text-sm text-primary-400 hover:text-primary-300 flex items-center justify-center"
               >
                 GitHub에서 설치된 앱 관리
-                <ExternalLink className="w-4 h-4 ml-1" />
+                <span className="ml-1">↗</span>
               </a>
             </div>
           </div>
