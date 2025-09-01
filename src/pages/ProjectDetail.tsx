@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { projectsAPI, DeployApplicationRequest, DeployAddonRequest } from '../api/projects'
-import ApplicationForm from '../components/ApplicationForm'
-import AddonForm from '../components/AddonForm'
+import { projectsAPI } from '../api/projects'
+import { applicationsAPI } from '../api/applications'
+import { addonsAPI } from '../api/addons'
 
 export default function ProjectDetail() {
   const { id } = useParams<{ id: string }>()
@@ -18,6 +18,18 @@ export default function ProjectDetail() {
     enabled: !!id,
   })
 
+  const { data: applications = [] } = useQuery({
+    queryKey: ['applications', id],
+    queryFn: () => applicationsAPI.getApplicationsByProject(Number(id)).then(res => res.data),
+    enabled: !!id,
+  })
+
+  const { data: addons = [] } = useQuery({
+    queryKey: ['addons', id], 
+    queryFn: () => addonsAPI.getAddonsByProject(Number(id)).then(res => res.data),
+    enabled: !!id,
+  })
+
   const deleteProjectMutation = useMutation({
     mutationFn: () => projectsAPI.deleteProject(Number(id)),
     onSuccess: () => {
@@ -29,37 +41,33 @@ export default function ProjectDetail() {
     },
   })
 
-  const deployApplicationMutation = useMutation({
-    mutationFn: (data: DeployApplicationRequest) => 
-      projectsAPI.deployApplication(Number(id), data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['project', id] })
-      setShowApplicationForm(false)
-      alert('Application deployment initiated')
-    },
-    onError: (error: any) => {
-      alert(error.response?.data?.message || 'Failed to deploy application')
-    },
-  })
-
-  const deployAddonMutation = useMutation({
-    mutationFn: (data: DeployAddonRequest) => 
-      projectsAPI.deployAddon(Number(id), data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['project', id] })
-      setShowAddonForm(false)
-      alert('Addon deployment initiated')
-    },
-    onError: (error: any) => {
-      alert(error.response?.data?.message || 'Failed to deploy addon')
-    },
-  })
-
   const handleDeleteProject = () => {
     if (confirm('Are you sure you want to delete this project?')) {
       deleteProjectMutation.mutate()
     }
   }
+
+  const createApplicationMutation = useMutation({
+    mutationFn: (data: any) => applicationsAPI.createApplication(Number(id), data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['applications', id] })
+      setShowApplicationForm(false)
+    },
+    onError: (error: any) => {
+      alert(error.response?.data?.message || 'Failed to create application')
+    },
+  })
+
+  const createAddonMutation = useMutation({
+    mutationFn: (data: any) => addonsAPI.createAddon(Number(id), data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['addons', id] })
+      setShowAddonForm(false)
+    },
+    onError: (error: any) => {
+      alert(error.response?.data?.message || 'Failed to create addon')
+    },
+  })
 
   if (isLoading) {
     return (
@@ -85,8 +93,8 @@ export default function ProjectDetail() {
       <div className="flex justify-between items-start">
         <div>
           <h1 className="text-3xl font-bold">{project.name}</h1>
-          {project.github_repo && (
-            <p className="text-primary-400 mt-2">{project.github_repo}</p>
+          {project.description && (
+            <p className="text-primary-400 mt-2">{project.description}</p>
           )}
           <p className="text-sm text-primary-500 mt-1">
             Created {new Date(project.created_at).toLocaleDateString()}
@@ -97,13 +105,13 @@ export default function ProjectDetail() {
             onClick={() => setShowApplicationForm(true)}
             className="btn-primary"
           >
-            DEPLOY APP
+            ADD APPLICATION
           </button>
           <button
             onClick={() => setShowAddonForm(true)}
             className="btn-secondary"
           >
-            DEPLOY ADDON
+            ADD ADDON
           </button>
           <button
             onClick={handleDeleteProject}
@@ -115,30 +123,143 @@ export default function ProjectDetail() {
         </div>
       </div>
 
+      {/* Application Form */}
       {showApplicationForm && (
-        <ApplicationForm
-          onSubmit={(data) => deployApplicationMutation.mutate(data)}
-          onCancel={() => setShowApplicationForm(false)}
-          isLoading={deployApplicationMutation.isPending}
-        />
+        <div className="card p-6">
+          <h3 className="text-lg font-semibold mb-4">CREATE APPLICATION</h3>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault()
+              const formData = new FormData(e.currentTarget)
+              createApplicationMutation.mutate({
+                name: formData.get('name'),
+                tier: formData.get('tier'),
+              })
+            }}
+            className="space-y-4"
+          >
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                Application Name
+              </label>
+              <input
+                name="name"
+                type="text"
+                required
+                className="input-field w-full max-w-md"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">Tier</label>
+              <select name="tier" required className="input-field w-full max-w-md">
+                <option value="">Select tier</option>
+                <option value="small">Small</option>
+                <option value="medium">Medium</option>
+                <option value="large">Large</option>
+              </select>
+            </div>
+            <div className="flex space-x-4">
+              <button
+                type="submit"
+                disabled={createApplicationMutation.isPending}
+                className="btn-primary"
+              >
+                {createApplicationMutation.isPending ? 'CREATING...' : 'CREATE'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowApplicationForm(false)}
+                className="btn-secondary"
+              >
+                CANCEL
+              </button>
+            </div>
+          </form>
+        </div>
       )}
 
+      {/* Addon Form */}
       {showAddonForm && (
-        <AddonForm
-          onSubmit={(data) => deployAddonMutation.mutate(data)}
-          onCancel={() => setShowAddonForm(false)}
-          isLoading={deployAddonMutation.isPending}
-        />
+        <div className="card p-6">
+          <h3 className="text-lg font-semibold mb-4">CREATE ADDON</h3>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault()
+              const formData = new FormData(e.currentTarget)
+              createAddonMutation.mutate({
+                name: formData.get('name'),
+                type: formData.get('type'),
+                tier: formData.get('tier'),
+                storage: formData.get('storage'),
+              })
+            }}
+            className="space-y-4"
+          >
+            <div>
+              <label className="block text-sm font-medium mb-2">Addon Name</label>
+              <input
+                name="name"
+                type="text"
+                required
+                className="input-field w-full max-w-md"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">Type</label>
+              <select name="type" required className="input-field w-full max-w-md">
+                <option value="">Select type</option>
+                <option value="mysql">MySQL</option>
+                <option value="redis">Redis</option>
+                <option value="postgresql">PostgreSQL</option>
+                <option value="mongodb">MongoDB</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">Tier</label>
+              <select name="tier" required className="input-field w-full max-w-md">
+                <option value="">Select tier</option>
+                <option value="small">Small</option>
+                <option value="medium">Medium</option>
+                <option value="large">Large</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">Storage</label>
+              <select name="storage" required className="input-field w-full max-w-md">
+                <option value="">Select storage</option>
+                <option value="10GB">10GB</option>
+                <option value="50GB">50GB</option>
+                <option value="100GB">100GB</option>
+              </select>
+            </div>
+            <div className="flex space-x-4">
+              <button
+                type="submit"
+                disabled={createAddonMutation.isPending}
+                className="btn-primary"
+              >
+                {createAddonMutation.isPending ? 'CREATING...' : 'CREATE'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowAddonForm(false)}
+                className="btn-secondary"
+              >
+                CANCEL
+              </button>
+            </div>
+          </form>
+        </div>
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div className="space-y-6">
           <div>
             <h2 className="text-xl font-bold mb-4">APPLICATIONS</h2>
-            {project.applications.length > 0 ? (
+            {applications.length > 0 ? (
               <div className="space-y-4">
-                {project.applications.map((app) => (
-                  <div key={app.name} className="card p-4">
+                {applications.map((app) => (
+                  <div key={app.id} className="card p-4">
                     <div className="flex justify-between items-start mb-2">
                       <h3 className="font-semibold">{app.name}</h3>
                       <span className="text-xs bg-primary-800 px-2 py-1">
@@ -165,7 +286,7 @@ export default function ProjectDetail() {
                   onClick={() => setShowApplicationForm(true)}
                   className="btn-secondary"
                 >
-                  DEPLOY YOUR FIRST APP
+                  ADD YOUR FIRST APPLICATION
                 </button>
               </div>
             )}
@@ -175,10 +296,10 @@ export default function ProjectDetail() {
         <div className="space-y-6">
           <div>
             <h2 className="text-xl font-bold mb-4">ADDONS</h2>
-            {project.addons.length > 0 ? (
+            {addons.length > 0 ? (
               <div className="space-y-4">
-                {project.addons.map((addon) => (
-                  <div key={addon.name} className="card p-4">
+                {addons.map((addon) => (
+                  <div key={addon.id} className="card p-4">
                     <div className="flex justify-between items-start mb-2">
                       <h3 className="font-semibold">{addon.name}</h3>
                       <span className="text-xs bg-primary-800 px-2 py-1">
@@ -188,9 +309,11 @@ export default function ProjectDetail() {
                     <p className="text-sm text-primary-400 mb-2">
                       Type: {addon.type}
                     </p>
-                    <div className="text-xs text-primary-500">
-                      Storage: {addon.storage}
-                    </div>
+                    {addon.storage && (
+                      <div className="text-xs text-primary-500">
+                        Storage: {addon.storage}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -201,7 +324,7 @@ export default function ProjectDetail() {
                   onClick={() => setShowAddonForm(true)}
                   className="btn-secondary"
                 >
-                  DEPLOY YOUR FIRST ADDON
+                  ADD YOUR FIRST ADDON
                 </button>
               </div>
             )}

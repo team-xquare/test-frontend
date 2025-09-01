@@ -1,7 +1,22 @@
+import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '../stores/auth'
+import { projectsAPI } from '../api/projects'
+import { githubAPI } from '../api/github'
 
 export default function Dashboard() {
   const { user } = useAuthStore()
+  
+  const { data: projects = [] } = useQuery({
+    queryKey: ['projects'],
+    queryFn: () => projectsAPI.getProjects().then(res => res.data),
+    enabled: !!user,
+  })
+
+  const { data: installations = [] } = useQuery({
+    queryKey: ['github-installations'],
+    queryFn: () => githubAPI.getInstallations().then(res => res.data),
+    enabled: !!user,
+  })
 
   return (
     <div className="space-y-8">
@@ -21,14 +36,14 @@ export default function Dashboard() {
 
         <div className="card p-6">
           <h3 className="text-lg font-semibold mb-2">TOTAL PROJECTS</h3>
-          <div className="text-2xl font-bold text-primary-300">0</div>
+          <div className="text-2xl font-bold text-primary-300">{projects.length}</div>
           <p className="text-sm text-primary-500 mt-1">Projects created</p>
         </div>
 
         <div className="card p-6">
-          <h3 className="text-lg font-semibold mb-2">GITHUB REPOS</h3>
-          <div className="text-2xl font-bold text-primary-300">0</div>
-          <p className="text-sm text-primary-500 mt-1">Connected repositories</p>
+          <h3 className="text-lg font-semibold mb-2">GITHUB INSTALLATIONS</h3>
+          <div className="text-2xl font-bold text-primary-300">{installations.length}</div>
+          <p className="text-sm text-primary-500 mt-1">Connected installations</p>
         </div>
       </div>
 

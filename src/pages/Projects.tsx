@@ -7,6 +7,7 @@ export default function Projects() {
   const [isCreating, setIsCreating] = useState(false)
   const [formData, setFormData] = useState<CreateProjectRequest>({
     name: '',
+    description: '',
   })
   const queryClient = useQueryClient()
 
@@ -20,7 +21,7 @@ export default function Projects() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['projects'] })
       setIsCreating(false)
-      setFormData({ name: '' })
+      setFormData({ name: '', description: '' })
     },
     onError: (error: any) => {
       alert(error.response?.data?.message || 'Failed to create project')
@@ -73,6 +74,19 @@ export default function Projects() {
                 }
               />
             </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                Description
+              </label>
+              <textarea
+                className="input-field w-full max-w-md"
+                rows={3}
+                value={formData.description}
+                onChange={(e) =>
+                  setFormData({ ...formData, description: e.target.value })
+                }
+              />
+            </div>
             <div className="flex space-x-4">
               <button
                 type="submit"
@@ -98,9 +112,9 @@ export default function Projects() {
           <Link key={project.id} to={`/projects/${project.id}`}>
             <div className="card p-6 hover:border-white transition-colors">
               <h3 className="text-lg font-semibold mb-2">{project.name}</h3>
-              {project.github_repo && (
+              {project.description && (
                 <p className="text-sm text-primary-400 mb-3">
-                  {project.github_repo}
+                  {project.description}
                 </p>
               )}
               <div className="text-xs text-primary-500">
