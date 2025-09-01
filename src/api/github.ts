@@ -23,9 +23,12 @@ export const githubAPI = {
   getRepositories: (installationId: string) => 
     apiClient.get<GitHubRepository[]>(`/github/installations/${installationId}/repositories`),
   
-  installApp: () => {
-    // GitHub App 설치 URL로 리다이렉트
-    const installUrl = `https://github.com/apps/xquare-infrastructure/installations/new`
+  linkInstallation: (installationId: string) => 
+    apiClient.post(`/github/installations/${installationId}/link`),
+  
+  installApp: (userId: number) => {
+    // GitHub App 설치 URL에 사용자 정보 포함
+    const installUrl = `https://github.com/apps/xquare-infrastructure/installations/new?state=${userId}`
     window.open(installUrl, '_blank')
   },
 }

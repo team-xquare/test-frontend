@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { githubAPI, GitHubInstallation } from '../api/github'
+import { useAuthStore } from '../stores/auth'
 
 interface GitHubAppInstallerProps {
   onInstallationSelect: (installation: GitHubInstallation) => void
@@ -8,6 +9,7 @@ interface GitHubAppInstallerProps {
 
 export default function GitHubAppInstaller({ onInstallationSelect }: GitHubAppInstallerProps) {
   const [showInstaller, setShowInstaller] = useState(false)
+  const { user } = useAuthStore()
 
   const { data: installations, isLoading, refetch } = useQuery({
     queryKey: ['github-installations'],
@@ -15,11 +17,13 @@ export default function GitHubAppInstaller({ onInstallationSelect }: GitHubAppIn
   })
 
   const handleInstallApp = () => {
-    githubAPI.installApp()
-    // GitHub App 설치 후 설치 목록을 새로고침
-    setTimeout(() => {
-      refetch()
-    }, 5000)
+    if (user?.id) {
+      githubAPI.installApp(user.id)
+      // GitHub App 설치 후 설치 목록을 새로고침
+      setTimeout(() => {
+        refetch()
+      }, 5000)
+    }
   }
 
   if (!showInstaller) {

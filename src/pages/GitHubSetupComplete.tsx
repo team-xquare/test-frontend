@@ -1,27 +1,56 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useAuthStore } from '../stores/auth'
+import { githubAPI } from '../api/github'
 
 export default function GitHubSetupComplete() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
+  const { user, isAuthenticated } = useAuthStore()
   const [countdown, setCountdown] = useState(5)
+  const [isLinking, setIsLinking] = useState(false)
+  const [linkingError, setLinkingError] = useState<string | null>(null)
+  const [isLinked, setIsLinked] = useState(false)
 
   const installationId = searchParams.get('installation_id')
 
+  // Auto-link installation when component mounts
   useEffect(() => {
-    const timer = setInterval(() => {
-      setCountdown((prev) => {
-        if (prev <= 1) {
-          clearInterval(timer)
-          navigate('/')
-          return 0
-        }
-        return prev - 1
-      })
-    }, 1000)
+    if (installationId && isAuthenticated && user && !isLinked && !isLinking) {
+      setIsLinking(true)
+      setLinkingError(null)
+      
+      githubAPI.linkInstallation(installationId)
+        .then(() => {
+          setIsLinked(true)
+        })
+        .catch((error) => {
+          console.error('Failed to link installation:', error)
+          setLinkingError('설치 연결에 실패했습니다. 나중에 다시 시도해주세요.')
+        })
+        .finally(() => {
+          setIsLinking(false)
+        })
+    }
+  }, [installationId, isAuthenticated, user, isLinked, isLinking])
 
-    return () => clearInterval(timer)
-  }, [navigate])
+  useEffect(() => {
+    // Only start countdown if we're not linking or if linking is complete/failed
+    if (!installationId || !isAuthenticated || isLinked || linkingError || !isLinking) {
+      const timer = setInterval(() => {
+        setCountdown((prev) => {
+          if (prev <= 1) {
+            clearInterval(timer)
+            navigate('/')
+            return 0
+          }
+          return prev - 1
+        })
+      }, 1000)
+
+      return () => clearInterval(timer)
+    }
+  }, [navigate, installationId, isAuthenticated, isLinked, linkingError, isLinking])
 
   const handleContinue = () => {
     navigate('/')
@@ -49,10 +78,41 @@ export default function GitHubSetupComplete() {
               <strong>xquare-infrastructure</strong> 앱이 성공적으로 설치되었습니다.
             </p>
             
-            {installationId && (
-              <p className="text-sm text-gray-400">
-                Installation ID: <code className="text-primary-400">{installationId}</code>
-              </p>
+            {/* Linking Status */}
+            {installationId && isAuthenticated && (
+              <div className="space-y-2">
+                <p className="text-sm text-gray-400">
+                  Installation ID: <code className="text-primary-400">{installationId}</code>
+                </p>
+                
+                {isLinking && (
+                  <div className="flex items-center justify-center space-x-2 text-yellow-400">
+                    <div className="w-4 h-4 border-2 border-yellow-400 border-t-transparent rounded-full animate-spin"></div>
+                    <span className="text-sm">계정에 설치를 연결 중...</span>
+                  </div>
+                )}
+                
+                {isLinked && !isLinking && (
+                  <div className="flex items-center justify-center space-x-2 text-green-400">
+                    <span className="text-lg">✓</span>
+                    <span className="text-sm">계정 연결 완료</span>
+                  </div>
+                )}
+                
+                {linkingError && (
+                  <div className="bg-red-900/50 border border-red-700 rounded-lg p-3">
+                    <p className="text-sm text-red-300">{linkingError}</p>
+                  </div>
+                )}
+              </div>
+            )}
+            
+            {installationId && !isAuthenticated && (
+              <div className="bg-yellow-900/50 border border-yellow-700 rounded-lg p-3">
+                <p className="text-sm text-yellow-300">
+                  설치를 계정에 연결하려면 로그인이 필요합니다.
+                </p>
+              </div>
             )}
 
             <div className="bg-gray-800 p-4 rounded-lg text-left">
