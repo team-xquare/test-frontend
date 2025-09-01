@@ -16,8 +16,7 @@ export interface GitHubConfig {
   owner: string
   repo: string
   branch: string
-  installationID: string
-  hash: string
+  installationId: string
   triggerPaths?: string[]
 }
 
